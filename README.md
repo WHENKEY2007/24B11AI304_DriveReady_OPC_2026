@@ -26,6 +26,14 @@ This repository contains the practical assignments and code developed during the
 
 ## 📅 Workshop Modules
 
+| Day | Topic / Focus | Frameworks & Models | Key Concepts & Deliverables | Code |
+| :--- | :--- | :--- | :--- | :--- |
+| **[Day 1](Day-1/README.md)** | Foundations & Prompt Guardrails | LangChain, Groq Cloud, `openai/gpt-oss-120b`, `llama-prompt-guard-2-22m` | • Sweet Crumbs Bakery persona design<br>• Behavioral rules & formatting limits<br>• Llama Prompt Guard security defense | [`Day-1/task.py`](Day-1/task.py) |
+| **[Day 2](Day-2/README.md)** | Multi-Turn HealthTrack AI Agent | OpenAI SDK, Groq Cloud, `openai/gpt-oss-120b` | • Stateful `HealthTrackAgent` class<br>• Sliding-window conversational memory<br>• Intent routing & JSON entity extraction<br>• API error handling & `@log_call` decorator | [`Day-2/task.py`](Day-2/task.py) |
+| **[Day 3](Day-3/README.md)** | Conversational Memory & Agent Workflows | LangChain, Google GenAI, `gemini-1.5-flash`, LangGraph | • Men's Tailoring Assistant (bilingual)<br>• LCEL chain with `MessagesPlaceholder`<br>• Automated benchmark suite (`test.csv`)<br>• Autonomous agent via `create_agent` | [`Day-3/task.py`](Day-3/task.py) |
+
+---
+
 ### [Day 1: Foundations & Prompt Guardrails](Day-1/README.md)
 - High-speed inference using Groq LPU and LangChain.
 - System prompt design with persona, facts, behavioral rules, and formatting limits.
@@ -57,17 +65,18 @@ This repository contains the practical assignments and code developed during the
 
 2. **Install dependencies:**
    ```bash
-   pip install openai langchain-groq groq python-dotenv ipywidgets
+   pip install openai langchain-groq groq langchain-google-genai langchain-core langchain python-dotenv
    ```
 
-3. **Configure API Key:**
+3. **Configure API Keys:**
    - Copy `.env.example` to `.env`:
      ```bash
      cp .env.example .env
      ```
-   - Add your Groq API key:
+   - Add your API keys:
      ```env
-     GROQ_API_KEY=gsk_your_key_here
+     GROQ_API_KEY=gsk_your_groq_key_here
+     GOOGLE_API_KEY=AIzaSy_your_google_key_here
      ```
 
 4. **Run any day's task:**
