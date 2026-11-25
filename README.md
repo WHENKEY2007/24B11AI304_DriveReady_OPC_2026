@@ -17,8 +17,8 @@ This repository contains the practical assignments and code developed during the
 │   ├── README.md           # Day 2 learnings and documentation
 │   └── AgenticAI-Day2.ipynb
 ├── Day-3/
-│   ├── task.py             # Day 3 assignments & workflows
-│   └── README.md
+│   ├── task.py             # Tailoring Assistant with Memory, Evaluation & Agent Workflows
+│   └── README.md           # Day 3 learnings and documentation
 ├── .env.example
 ├── .gitignore
 └── README.md
@@ -40,8 +40,12 @@ This repository contains the practical assignments and code developed during the
 - API error handling (`RateLimitError`, `APIConnectionError`).
 - Observability and logging using Python decorators (`@log_call`).
 
-### [Day 3: Advanced Agent Workflows](Day-3/README.md)
-- Advanced agent workflows, multi-step orchestration, and tool integration.
+### [Day 3: Conversational Memory, Automated Evaluation & LangChain Agents](Day-3/README.md)
+- Multi-turn conversation chains using LangChain and Google Gemini (`ChatGoogleGenerativeAI`).
+- Specialized persona engineering with strict domain facts, behavioral boundaries, and bilingual rules.
+- Stateful conversational memory using `MessagesPlaceholder`.
+- Benchmark evaluation suite for automated compliance and regression testing (`test.csv`).
+- Autonomous agent workflows initialized with `create_agent`.
 
 ---
 
