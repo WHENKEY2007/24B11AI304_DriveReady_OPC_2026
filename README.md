@@ -10,12 +10,10 @@ This repository contains the practical assignments and code developed during the
 24B11AI304_DriveReady_OPC_2026/
 ├── Day-1/
 │   ├── task.py             # LangChain + Groq Assistant with Prompt Guard
-│   ├── README.md           # Day 1 learnings and documentation
-│   └── agenticAI_Day1.ipynb
+│   └── README.md           # Day 1 learnings and documentation
 ├── Day-2/
 │   ├── task.py             # HealthTrack AI Agent with Memory & Tool Tracking
-│   ├── README.md           # Day 2 learnings and documentation
-│   └── AgenticAI-Day2.ipynb
+│   └── README.md           # Day 2 learnings and documentation
 ├── Day-3/
 │   ├── task.py             # Tailoring Assistant with Memory, Evaluation & Agent Workflows
 │   └── README.md           # Day 3 learnings and documentation

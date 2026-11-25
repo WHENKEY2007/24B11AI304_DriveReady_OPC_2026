@@ -1,291 +1,159 @@
-{
-  "nbformat": 4,
-  "nbformat_minor": 0,
-  "metadata": {
-    "colab": {
-      "provenance": [],
-      "toc_visible": true,
-      "authorship_tag": "ABX9TyP5dGrvEK8hMN1Fr6dNdPYc",
-      "include_colab_link": true
-    },
-    "kernelspec": {
-      "name": "python3",
-      "display_name": "Python 3"
-    },
-    "language_info": {
-      "name": "python"
-    }
-  },
-  "cells": [
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "view-in-github",
-        "colab_type": "text"
-      },
-      "source": [
-        "<a href=\"https://colab.research.google.com/github/WHENKEY2007/24B11AI304_DriveReady_OPC_2026/blob/main/Day-3/task.py\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 1,
-      "metadata": {
-        "id": "0o1bXZXgUDhD"
-      },
-      "outputs": [],
-      "source": []
-    },
-    {
-      "cell_type": "code",
-      "metadata": {
-        "id": "fe49e5a3"
-      },
-      "source": [
-        "!pip install -q --upgrade langchain-google-genai"
-      ],
-      "execution_count": 6,
-      "outputs": []
-    },
-    {
-      "cell_type": "code",
-      "source": [
-        "import os\n",
-        "try:\n",
-        "    from google.colab import userdata\n",
-        "    os.environ[\"GOOGLE_API_KEY\"] = userdata.get(\"GOOGLE_API_KEY\")\n",
-        "except Exception:\n",
-        "    if not os.environ.get(\"GOOGLE_API_KEY\"):\n",
-        "        print(\"Please set GOOGLE_API_KEY environment variable.\")\n",
-        "from langchain_google_genai import ChatGoogleGenerativeAI\n",
-        "\n",
-        "llm = ChatGoogleGenerativeAI(model=\"gemini-3.8-flash\", temperature=0.2)"
-      ],
-      "metadata": {
-        "collapsed": true,
-        "id": "jwFPjMuVZr3D"
-      },
-      "execution_count": 9,
-      "outputs": []
-    },
-    {
-      "cell_type": "code",
-      "source": [
-        "from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder\n",
-        "from langchain_core.output_parsers import StrOutputParser\n",
-        "\n",
-        "\n",
-        "SYSTEM = \"\"\"\n",
-        "ROLE:\n",
-        "You are a friendly assistant for a men's tailoring business.\n",
-        "\n",
-        "FACTS:\n",
-        "- Services include:\n",
-        "  1. Shirt stitching\n",
-        "  2. Pant stitching\n",
-        "  3. Trouser stitching\n",
-        "  4. Suit stitching\n",
-        "  5. Blazer stitching\n",
-        "  6. Kurta stitching\n",
-        "  7. Clothing alterations\n",
-        "  8. Custom men's outfits\n",
-        "- Custom measurements are required for stitching.\n",
-        "- Pricing depends on garment type, fabric, and design.\n",
-        "- Customers can enquire about stitching services and prices.\n",
-        "\n",
-        "RULES:\n",
-        "- Only discuss men's tailoring services.\n",
-        "- Never invent prices or delivery dates.\n",
-        "- Never promise delivery times or locations.\n",
-        "- If information is unavailable, say:\n",
-        "  \"I'll check with the tailor.\"\n",
-        "- Ask for garment type and design details\n",
-        "  before discussing pricing.\n",
-        "- Be polite and professional.\n",
-        "- Do not assume fabric is provided by the shop.\n",
-        "\n",
-        "FORMAT:\n",
-        "- Keep responses under 50 words.\n",
-        "- Use simple English or Telugu,\n",
-        "  matching the customer's language.\n",
-        "- Use a friendly, conversational tone.\n",
-        "\"\"\"\n",
-        "\n",
-        "\n",
-        "prompt = ChatPromptTemplate.from_messages([\n",
-        "    (\"system\", SYSTEM),\n",
-        "    MessagesPlaceholder(\"history\"),          # the chat so far goes here\n",
-        "    (\"human\", \"{question}\"),\n",
-        "])\n",
-        "chain = prompt | llm | StrOutputParser()\n",
-        "\n",
-        "history = []\n",
-        "def ask(question: str) -> str:\n",
-        "    answer = chain.invoke({\"history\": history, \"question\": question})\n",
-        "    history.extend([(\"human\", question), (\"ai\", answer)])\n",
-        "    return answer\n",
-        "\n",
-        "print(ask(\"Hi, I'm Veky. Do you stitch suits?\"))\n",
-        "print(ask(\"What's my name?\"))"
-      ],
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/",
-          "height": 1000
-        },
-        "collapsed": true,
-        "id": "cRc6bxZ_Z2JI",
-        "outputId": "1b4d1696-2744-47bf-d61f-aa93fc87435e"
-      },
-      "execution_count": 13,
-      "outputs": [
-        {
-          "output_type": "error",
-          "ename": "GoogleRateLimitError",
-          "evalue": "Error calling model 'gemini-3.8-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 16h40.605870577s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'model': 'gemini-3.8-flash', 'location': 'global'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '57640s'}]}}",
-          "traceback": [
-            "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
-            "\u001b[0;31mClientError\u001b[0m                               Traceback (most recent call last)",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_google_genai/chat_models.py\u001b[0m in \u001b[0;36m_generate\u001b[0;34m(self, messages, stop, run_manager, tools, functions, safety_settings, tool_config, generation_config, cached_content, tool_choice, **kwargs)\u001b[0m\n\u001b[1;32m   4327\u001b[0m         \u001b[0;32mtry\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 4328\u001b[0;31m             response: GenerateContentResponse = self.client.models.generate_content(\n\u001b[0m\u001b[1;32m   4329\u001b[0m                 \u001b[0;34m**\u001b[0m\u001b[0mrequest\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/models.py\u001b[0m in \u001b[0;36mgenerate_content\u001b[0;34m(self, model, contents, config)\u001b[0m\n\u001b[1;32m   6203\u001b[0m       \u001b[0mi\u001b[0m \u001b[0;34m+=\u001b[0m \u001b[0;36m1\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 6204\u001b[0;31m       response = self._generate_content_with_continuation(\n\u001b[0m\u001b[1;32m   6205\u001b[0m           \u001b[0mmodel\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mmodel\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcontents\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcontents\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mparsed_config_to_call\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/models.py\u001b[0m in \u001b[0;36m_generate_content_with_continuation\u001b[0;34m(self, model, contents, config)\u001b[0m\n\u001b[1;32m   6044\u001b[0m       )\n\u001b[0;32m-> 6045\u001b[0;31m       response = self._generate_content(\n\u001b[0m\u001b[1;32m   6046\u001b[0m           \u001b[0mmodel\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mmodel\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcontents\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcontents\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcall_config\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/models.py\u001b[0m in \u001b[0;36m_generate_content\u001b[0;34m(self, model, contents, config)\u001b[0m\n\u001b[1;32m   4572\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 4573\u001b[0;31m     response = self._api_client.request(\n\u001b[0m\u001b[1;32m   4574\u001b[0m         \u001b[0;34m'post'\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mpath\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mrequest_dict\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mhttp_options\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/_api_client.py\u001b[0m in \u001b[0;36mrequest\u001b[0;34m(self, http_method, path, request_dict, http_options)\u001b[0m\n\u001b[1;32m   2373\u001b[0m     )\n\u001b[0;32m-> 2374\u001b[0;31m     \u001b[0mresponse\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_request\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mhttp_request\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mhttp_options\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstream\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;32mFalse\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   2375\u001b[0m     response_body = (\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/_api_client.py\u001b[0m in \u001b[0;36m_request\u001b[0;34m(self, http_request, http_options, stream)\u001b[0m\n\u001b[1;32m   2147\u001b[0m         \u001b[0mretry\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mtenacity\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mRetrying\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m**\u001b[0m\u001b[0mretry_kwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 2148\u001b[0;31m         \u001b[0;32mreturn\u001b[0m \u001b[0mretry\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_request_once\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mhttp_request\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstream\u001b[0m\u001b[0;34m)\u001b[0m  \u001b[0;31m# type: ignore[no-any-return]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   2149\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/tenacity/__init__.py\u001b[0m in \u001b[0;36m__call__\u001b[0;34m(self, fn, *args, **kwargs)\u001b[0m\n\u001b[1;32m    469\u001b[0m         \u001b[0;32mwhile\u001b[0m \u001b[0;32mTrue\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 470\u001b[0;31m             \u001b[0mdo\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0miter\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mretry_state\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mretry_state\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    471\u001b[0m             \u001b[0;32mif\u001b[0m \u001b[0misinstance\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mdo\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mDoAttempt\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/tenacity/__init__.py\u001b[0m in \u001b[0;36miter\u001b[0;34m(self, retry_state)\u001b[0m\n\u001b[1;32m    370\u001b[0m         \u001b[0;32mfor\u001b[0m \u001b[0maction\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0miter_state\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mactions\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 371\u001b[0;31m             \u001b[0mresult\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0maction\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mretry_state\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    372\u001b[0m         \u001b[0;32mreturn\u001b[0m \u001b[0mresult\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/tenacity/__init__.py\u001b[0m in \u001b[0;36mexc_check\u001b[0;34m(rs)\u001b[0m\n\u001b[1;32m    412\u001b[0m                 \u001b[0;32mif\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mreraise\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 413\u001b[0;31m                     \u001b[0;32mraise\u001b[0m \u001b[0mretry_exc\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mreraise\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    414\u001b[0m                 \u001b[0;32mraise\u001b[0m \u001b[0mretry_exc\u001b[0m \u001b[0;32mfrom\u001b[0m \u001b[0mfut\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mexception\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/tenacity/__init__.py\u001b[0m in \u001b[0;36mreraise\u001b[0;34m(self)\u001b[0m\n\u001b[1;32m    183\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mlast_attempt\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mfailed\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 184\u001b[0;31m             \u001b[0;32mraise\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mlast_attempt\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mresult\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    185\u001b[0m         \u001b[0;32mraise\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/lib/python3.13/concurrent/futures/_base.py\u001b[0m in \u001b[0;36mresult\u001b[0;34m(self, timeout)\u001b[0m\n\u001b[1;32m    452\u001b[0m                 \u001b[0;32melif\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_state\u001b[0m \u001b[0;34m==\u001b[0m \u001b[0mFINISHED\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 453\u001b[0;31m                     \u001b[0;32mreturn\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m__get_result\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    454\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/lib/python3.13/concurrent/futures/_base.py\u001b[0m in \u001b[0;36m__get_result\u001b[0;34m(self)\u001b[0m\n\u001b[1;32m    401\u001b[0m             \u001b[0;32mtry\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 402\u001b[0;31m                 \u001b[0;32mraise\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_exception\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    403\u001b[0m             \u001b[0;32mfinally\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/tenacity/__init__.py\u001b[0m in \u001b[0;36m__call__\u001b[0;34m(self, fn, *args, **kwargs)\u001b[0m\n\u001b[1;32m    472\u001b[0m                 \u001b[0;32mtry\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 473\u001b[0;31m                     \u001b[0mresult\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mfn\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m*\u001b[0m\u001b[0margs\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    474\u001b[0m                 \u001b[0;32mexcept\u001b[0m \u001b[0mBaseException\u001b[0m\u001b[0;34m:\u001b[0m  \u001b[0;31m# noqa: B902\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/_api_client.py\u001b[0m in \u001b[0;36m_request_once\u001b[0;34m(self, http_request, stream)\u001b[0m\n\u001b[1;32m   2126\u001b[0m       \u001b[0mresponse\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_httpx_client\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0msend\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mhttpx_request\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstream\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mstream\u001b[0m\u001b[0;34m)\u001b[0m  \u001b[0;31m# type: ignore[union-attr, arg-type]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 2127\u001b[0;31m     \u001b[0merrors\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mAPIError\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mraise_for_response\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mresponse\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   2128\u001b[0m     return HttpResponse(\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/errors.py\u001b[0m in \u001b[0;36mraise_for_response\u001b[0;34m(cls, response)\u001b[0m\n\u001b[1;32m    186\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 187\u001b[0;31m     \u001b[0mcls\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mraise_error\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mresponse\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mstatus_code\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mresponse_json\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mresponse\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    188\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/errors.py\u001b[0m in \u001b[0;36mraise_error\u001b[0;34m(cls, status_code, response_json, response)\u001b[0m\n\u001b[1;32m    215\u001b[0m     \u001b[0;32mif\u001b[0m \u001b[0;36m400\u001b[0m \u001b[0;34m<=\u001b[0m \u001b[0mstatus_code\u001b[0m \u001b[0;34m<\u001b[0m \u001b[0;36m500\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 216\u001b[0;31m       \u001b[0;32mraise\u001b[0m \u001b[0mClientError\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mstatus_code\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mresponse_json\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mresponse\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    217\u001b[0m     \u001b[0;32melif\u001b[0m \u001b[0;36m500\u001b[0m \u001b[0;34m<=\u001b[0m \u001b[0mstatus_code\u001b[0m \u001b[0;34m<\u001b[0m \u001b[0;36m600\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;31mClientError\u001b[0m: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 16h40.605870577s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'model': 'gemini-3.8-flash', 'location': 'global'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '57640s'}]}}",
-            "\nThe above exception was the direct cause of the following exception:\n",
-            "\u001b[0;31mGoogleRateLimitError\u001b[0m                      Traceback (most recent call last)",
-            "\u001b[0;32m/tmp/ipykernel_2138/204702981.py\u001b[0m in \u001b[0;36m<cell line: 0>\u001b[0;34m()\u001b[0m\n\u001b[1;32m     53\u001b[0m     \u001b[0;32mreturn\u001b[0m \u001b[0manswer\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     54\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m---> 55\u001b[0;31m \u001b[0mprint\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mask\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\"Hi, I'm Ravi. Do you stitch suits?\"\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m     56\u001b[0m \u001b[0mprint\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mask\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\"What's my name?\"\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/tmp/ipykernel_2138/204702981.py\u001b[0m in \u001b[0;36mask\u001b[0;34m(question)\u001b[0m\n\u001b[1;32m     49\u001b[0m \u001b[0mhistory\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;34m[\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     50\u001b[0m \u001b[0;32mdef\u001b[0m \u001b[0mask\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mquestion\u001b[0m\u001b[0;34m:\u001b[0m \u001b[0mstr\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;34m->\u001b[0m \u001b[0mstr\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m---> 51\u001b[0;31m     \u001b[0manswer\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mchain\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minvoke\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m{\u001b[0m\u001b[0;34m\"history\"\u001b[0m\u001b[0;34m:\u001b[0m \u001b[0mhistory\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m\"question\"\u001b[0m\u001b[0;34m:\u001b[0m \u001b[0mquestion\u001b[0m\u001b[0;34m}\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m     52\u001b[0m     \u001b[0mhistory\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mextend\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\"human\"\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mquestion\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m(\u001b[0m\u001b[0;34m\"ai\"\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0manswer\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     53\u001b[0m     \u001b[0;32mreturn\u001b[0m \u001b[0manswer\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_core/runnables/base.py\u001b[0m in \u001b[0;36minvoke\u001b[0;34m(self, input, config, **kwargs)\u001b[0m\n\u001b[1;32m   3473\u001b[0m                         \u001b[0minput_\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mcontext\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mrun\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mstep\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minvoke\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0minput_\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   3474\u001b[0m                     \u001b[0;32melse\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 3475\u001b[0;31m                         \u001b[0minput_\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mcontext\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mrun\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mstep\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minvoke\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0minput_\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   3476\u001b[0m         \u001b[0;31m# finish the root run\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   3477\u001b[0m         \u001b[0;32mexcept\u001b[0m \u001b[0mBaseException\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0me\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_google_genai/chat_models.py\u001b[0m in \u001b[0;36minvoke\u001b[0;34m(self, input, config, code_execution, stop, **kwargs)\u001b[0m\n\u001b[1;32m   3713\u001b[0m                 \u001b[0;32mraise\u001b[0m \u001b[0mValueError\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mmsg\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   3714\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 3715\u001b[0;31m         \u001b[0;32mreturn\u001b[0m \u001b[0msuper\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minvoke\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0minput\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstop\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mstop\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   3716\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   3717\u001b[0m     def _get_ls_params(\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_core/language_models/chat_models.py\u001b[0m in \u001b[0;36minvoke\u001b[0;34m(self, input, config, stop, **kwargs)\u001b[0m\n\u001b[1;32m    527\u001b[0m             cast(\n\u001b[1;32m    528\u001b[0m                 \u001b[0;34m\"ChatGeneration\"\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 529\u001b[0;31m                 self.generate_prompt(\n\u001b[0m\u001b[1;32m    530\u001b[0m                     \u001b[0;34m[\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_convert_input\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0minput\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    531\u001b[0m                     \u001b[0mstop\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mstop\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_core/language_models/chat_models.py\u001b[0m in \u001b[0;36mgenerate_prompt\u001b[0;34m(self, prompts, stop, callbacks, **kwargs)\u001b[0m\n\u001b[1;32m   1918\u001b[0m     ) -> LLMResult:\n\u001b[1;32m   1919\u001b[0m         \u001b[0mprompt_messages\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;34m[\u001b[0m\u001b[0mp\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mto_messages\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;32mfor\u001b[0m \u001b[0mp\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mprompts\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 1920\u001b[0;31m         \u001b[0;32mreturn\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mgenerate\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mprompt_messages\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstop\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mstop\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcallbacks\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcallbacks\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   1921\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1922\u001b[0m     \u001b[0;34m@\u001b[0m\u001b[0moverride\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_core/language_models/chat_models.py\u001b[0m in \u001b[0;36mgenerate\u001b[0;34m(self, messages, stop, callbacks, tags, metadata, run_name, run_id, **kwargs)\u001b[0m\n\u001b[1;32m   1725\u001b[0m             \u001b[0;32mtry\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1726\u001b[0m                 results.append(\n\u001b[0;32m-> 1727\u001b[0;31m                     self._generate_with_cache(\n\u001b[0m\u001b[1;32m   1728\u001b[0m                         \u001b[0mm\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1729\u001b[0m                         \u001b[0mstop\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mstop\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_core/language_models/chat_models.py\u001b[0m in \u001b[0;36m_generate_with_cache\u001b[0;34m(self, messages, stop, run_manager, **kwargs)\u001b[0m\n\u001b[1;32m   2063\u001b[0m             \u001b[0mresult\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mgenerate_from_stream\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0miter\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mchunks\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   2064\u001b[0m         \u001b[0;32melif\u001b[0m \u001b[0m_signature_parameters\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_generate\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mget\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\"run_manager\"\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 2065\u001b[0;31m             result = self._generate(\n\u001b[0m\u001b[1;32m   2066\u001b[0m                 \u001b[0mmessages\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstop\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mstop\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mrun_manager\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mrun_manager\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   2067\u001b[0m             )\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_google_genai/chat_models.py\u001b[0m in \u001b[0;36m_generate\u001b[0;34m(self, messages, stop, run_manager, tools, functions, safety_settings, tool_config, generation_config, cached_content, tool_choice, **kwargs)\u001b[0m\n\u001b[1;32m   4330\u001b[0m             )\n\u001b[1;32m   4331\u001b[0m         \u001b[0;32mexcept\u001b[0m \u001b[0mClientError\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0me\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 4332\u001b[0;31m             \u001b[0m_handle_client_error\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0me\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mrequest\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   4333\u001b[0m         \u001b[0;32mexcept\u001b[0m \u001b[0mServerError\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0me\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   4334\u001b[0m             \u001b[0m_handle_server_error\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0me\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_google_genai/chat_models.py\u001b[0m in \u001b[0;36m_handle_client_error\u001b[0;34m(e, request)\u001b[0m\n\u001b[1;32m    344\u001b[0m     \u001b[0mmsg\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;34mf\"Error calling model '{model_name}' ({e.status}): {e}\"\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    345\u001b[0m     \u001b[0;32mif\u001b[0m \u001b[0merror_type\u001b[0m \u001b[0;34m:=\u001b[0m \u001b[0m_CLIENT_ERROR_TYPES\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mget\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0me\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mcode\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 346\u001b[0;31m         \u001b[0;32mraise\u001b[0m \u001b[0merror_type\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mmsg\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;32mfrom\u001b[0m \u001b[0me\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    347\u001b[0m     \u001b[0;32mraise\u001b[0m \u001b[0mChatGoogleGenerativeAIError\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mmsg\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;32mfrom\u001b[0m \u001b[0me\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    348\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;31mGoogleRateLimitError\u001b[0m: Error calling model 'gemini-3.8-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 16h40.605870577s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'model': 'gemini-3.8-flash', 'location': 'global'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '57640s'}]}}"
-          ]
-        }
-      ]
-    },
-    {
-      "cell_type": "code",
-      "source": [
-        "import csv\n",
-        "\n",
-        "def run_tests(path: str = \"/content/test.csv\") -> None:\n",
-        "    rows = list(csv.DictReader(open(path)))\n",
-        "    passed = 0\n",
-        "    for row in rows:\n",
-        "        answer = chain.invoke({\"history\": [], \"question\": row[\"question\"]})\n",
-        "        ok = row[\"must_include\"].lower() in answer.lower()\n",
-        "        passed += ok\n",
-        "        print(\"PASS\" if ok else \"FAIL\", \"|\", row[\"question\"], \"→\", answer[:70])\n",
-        "    print(f\"\\n{passed}/{len(rows)} passed ({passed / len(rows):.0%})\")\n",
-        "\n"
-      ],
-      "metadata": {
-        "id": "LeE0p2-YZ4hC"
-      },
-      "execution_count": 14,
-      "outputs": []
-    },
-    {
-      "cell_type": "code",
-      "source": [
-        "\n",
-        "from langchain.agents import create_agent\n",
-        "\n",
-        "# Create the tailoring assistant\n",
-        "agent_order = create_agent(\n",
-        "    model=llm,\n",
-        "    tools=[],\n",
-        "    system_prompt=SYSTEM\n",
-        ")\n",
-        "\n",
-        "# Ask a customer question\n",
-        "result_order = agent_order.invoke({\n",
-        "    \"messages\": [\n",
-        "        {\n",
-        "            \"role\": \"user\",\n",
-        "            \"content\": \"Do you stitch formal shirts?\"\n",
-        "        }\n",
-        "    ]\n",
-        "})\n",
-        "\n",
-        "# Print the assistant response\n",
-        "print(result_order[\"messages\"][-1].content)\n"
-      ],
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/",
-          "height": 807
-        },
-        "collapsed": true,
-        "id": "sCiYGvqAZ73G",
-        "outputId": "18bfca56-4990-428e-9037-2c63784d4af8"
-      },
-      "execution_count": 16,
-      "outputs": [
-        {
-          "output_type": "error",
-          "ename": "GoogleRateLimitError",
-          "evalue": "Error calling model 'gemini-3.8-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 15h50m11.429717246s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.8-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '57011s'}]}}",
-          "traceback": [
-            "\u001b[0;31m---------------------------------------------------------------------------\u001b[0m",
-            "\u001b[0;31mClientError\u001b[0m                               Traceback (most recent call last)",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_google_genai/chat_models.py\u001b[0m in \u001b[0;36m_generate\u001b[0;34m(self, messages, stop, run_manager, tools, functions, safety_settings, tool_config, generation_config, cached_content, tool_choice, **kwargs)\u001b[0m\n\u001b[1;32m   4327\u001b[0m         \u001b[0;32mtry\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 4328\u001b[0;31m             response: GenerateContentResponse = self.client.models.generate_content(\n\u001b[0m\u001b[1;32m   4329\u001b[0m                 \u001b[0;34m**\u001b[0m\u001b[0mrequest\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/models.py\u001b[0m in \u001b[0;36mgenerate_content\u001b[0;34m(self, model, contents, config)\u001b[0m\n\u001b[1;32m   6203\u001b[0m       \u001b[0mi\u001b[0m \u001b[0;34m+=\u001b[0m \u001b[0;36m1\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 6204\u001b[0;31m       response = self._generate_content_with_continuation(\n\u001b[0m\u001b[1;32m   6205\u001b[0m           \u001b[0mmodel\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mmodel\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcontents\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcontents\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mparsed_config_to_call\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/models.py\u001b[0m in \u001b[0;36m_generate_content_with_continuation\u001b[0;34m(self, model, contents, config)\u001b[0m\n\u001b[1;32m   6044\u001b[0m       )\n\u001b[0;32m-> 6045\u001b[0;31m       response = self._generate_content(\n\u001b[0m\u001b[1;32m   6046\u001b[0m           \u001b[0mmodel\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mmodel\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcontents\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcontents\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcall_config\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/models.py\u001b[0m in \u001b[0;36m_generate_content\u001b[0;34m(self, model, contents, config)\u001b[0m\n\u001b[1;32m   4572\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 4573\u001b[0;31m     response = self._api_client.request(\n\u001b[0m\u001b[1;32m   4574\u001b[0m         \u001b[0;34m'post'\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mpath\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mrequest_dict\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mhttp_options\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/_api_client.py\u001b[0m in \u001b[0;36mrequest\u001b[0;34m(self, http_method, path, request_dict, http_options)\u001b[0m\n\u001b[1;32m   2373\u001b[0m     )\n\u001b[0;32m-> 2374\u001b[0;31m     \u001b[0mresponse\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_request\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mhttp_request\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mhttp_options\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstream\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;32mFalse\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   2375\u001b[0m     response_body = (\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/_api_client.py\u001b[0m in \u001b[0;36m_request\u001b[0;34m(self, http_request, http_options, stream)\u001b[0m\n\u001b[1;32m   2147\u001b[0m         \u001b[0mretry\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mtenacity\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mRetrying\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m**\u001b[0m\u001b[0mretry_kwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 2148\u001b[0;31m         \u001b[0;32mreturn\u001b[0m \u001b[0mretry\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_request_once\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mhttp_request\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstream\u001b[0m\u001b[0;34m)\u001b[0m  \u001b[0;31m# type: ignore[no-any-return]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   2149\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/tenacity/__init__.py\u001b[0m in \u001b[0;36m__call__\u001b[0;34m(self, fn, *args, **kwargs)\u001b[0m\n\u001b[1;32m    469\u001b[0m         \u001b[0;32mwhile\u001b[0m \u001b[0;32mTrue\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 470\u001b[0;31m             \u001b[0mdo\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0miter\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mretry_state\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mretry_state\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    471\u001b[0m             \u001b[0;32mif\u001b[0m \u001b[0misinstance\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mdo\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mDoAttempt\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/tenacity/__init__.py\u001b[0m in \u001b[0;36miter\u001b[0;34m(self, retry_state)\u001b[0m\n\u001b[1;32m    370\u001b[0m         \u001b[0;32mfor\u001b[0m \u001b[0maction\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0miter_state\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mactions\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 371\u001b[0;31m             \u001b[0mresult\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0maction\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mretry_state\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    372\u001b[0m         \u001b[0;32mreturn\u001b[0m \u001b[0mresult\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/tenacity/__init__.py\u001b[0m in \u001b[0;36mexc_check\u001b[0;34m(rs)\u001b[0m\n\u001b[1;32m    412\u001b[0m                 \u001b[0;32mif\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mreraise\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 413\u001b[0;31m                     \u001b[0;32mraise\u001b[0m \u001b[0mretry_exc\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mreraise\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    414\u001b[0m                 \u001b[0;32mraise\u001b[0m \u001b[0mretry_exc\u001b[0m \u001b[0;32mfrom\u001b[0m \u001b[0mfut\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mexception\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/tenacity/__init__.py\u001b[0m in \u001b[0;36mreraise\u001b[0;34m(self)\u001b[0m\n\u001b[1;32m    183\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mlast_attempt\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mfailed\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 184\u001b[0;31m             \u001b[0;32mraise\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mlast_attempt\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mresult\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    185\u001b[0m         \u001b[0;32mraise\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/lib/python3.13/concurrent/futures/_base.py\u001b[0m in \u001b[0;36mresult\u001b[0;34m(self, timeout)\u001b[0m\n\u001b[1;32m    452\u001b[0m                 \u001b[0;32melif\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_state\u001b[0m \u001b[0;34m==\u001b[0m \u001b[0mFINISHED\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 453\u001b[0;31m                     \u001b[0;32mreturn\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m__get_result\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    454\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/lib/python3.13/concurrent/futures/_base.py\u001b[0m in \u001b[0;36m__get_result\u001b[0;34m(self)\u001b[0m\n\u001b[1;32m    401\u001b[0m             \u001b[0;32mtry\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 402\u001b[0;31m                 \u001b[0;32mraise\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_exception\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    403\u001b[0m             \u001b[0;32mfinally\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/tenacity/__init__.py\u001b[0m in \u001b[0;36m__call__\u001b[0;34m(self, fn, *args, **kwargs)\u001b[0m\n\u001b[1;32m    472\u001b[0m                 \u001b[0;32mtry\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 473\u001b[0;31m                     \u001b[0mresult\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mfn\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m*\u001b[0m\u001b[0margs\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    474\u001b[0m                 \u001b[0;32mexcept\u001b[0m \u001b[0mBaseException\u001b[0m\u001b[0;34m:\u001b[0m  \u001b[0;31m# noqa: B902\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/_api_client.py\u001b[0m in \u001b[0;36m_request_once\u001b[0;34m(self, http_request, stream)\u001b[0m\n\u001b[1;32m   2126\u001b[0m       \u001b[0mresponse\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_httpx_client\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0msend\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mhttpx_request\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstream\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mstream\u001b[0m\u001b[0;34m)\u001b[0m  \u001b[0;31m# type: ignore[union-attr, arg-type]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 2127\u001b[0;31m     \u001b[0merrors\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mAPIError\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mraise_for_response\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mresponse\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   2128\u001b[0m     return HttpResponse(\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/errors.py\u001b[0m in \u001b[0;36mraise_for_response\u001b[0;34m(cls, response)\u001b[0m\n\u001b[1;32m    186\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 187\u001b[0;31m     \u001b[0mcls\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mraise_error\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mresponse\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mstatus_code\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mresponse_json\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mresponse\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    188\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/google/genai/errors.py\u001b[0m in \u001b[0;36mraise_error\u001b[0;34m(cls, status_code, response_json, response)\u001b[0m\n\u001b[1;32m    215\u001b[0m     \u001b[0;32mif\u001b[0m \u001b[0;36m400\u001b[0m \u001b[0;34m<=\u001b[0m \u001b[0mstatus_code\u001b[0m \u001b[0;34m<\u001b[0m \u001b[0;36m500\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 216\u001b[0;31m       \u001b[0;32mraise\u001b[0m \u001b[0mClientError\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mstatus_code\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mresponse_json\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mresponse\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    217\u001b[0m     \u001b[0;32melif\u001b[0m \u001b[0;36m500\u001b[0m \u001b[0;34m<=\u001b[0m \u001b[0mstatus_code\u001b[0m \u001b[0;34m<\u001b[0m \u001b[0;36m600\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;31mClientError\u001b[0m: 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 15h50m11.429717246s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.8-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '57011s'}]}}",
-            "\nThe above exception was the direct cause of the following exception:\n",
-            "\u001b[0;31mGoogleRateLimitError\u001b[0m                      Traceback (most recent call last)",
-            "\u001b[0;32m/tmp/ipykernel_2138/1144965906.py\u001b[0m in \u001b[0;36m<cell line: 0>\u001b[0;34m()\u001b[0m\n\u001b[1;32m      9\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m     10\u001b[0m \u001b[0;31m# Ask a customer question\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m---> 11\u001b[0;31m result_order = agent_order.invoke({\n\u001b[0m\u001b[1;32m     12\u001b[0m     \"messages\": [\n\u001b[1;32m     13\u001b[0m         {\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langgraph/pregel/main.py\u001b[0m in \u001b[0;36minvoke\u001b[0;34m(self, input, config, context, stream_mode, print_mode, output_keys, interrupt_before, interrupt_after, durability, control, version, **kwargs)\u001b[0m\n\u001b[1;32m   3998\u001b[0m         \u001b[0;32melse\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   3999\u001b[0m             \u001b[0;31m# v1: collect interrupts from updates stream\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 4000\u001b[0;31m             for chunk in self.stream(\n\u001b[0m\u001b[1;32m   4001\u001b[0m                 \u001b[0minput\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   4002\u001b[0m                 \u001b[0mconfig\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langgraph/pregel/main.py\u001b[0m in \u001b[0;36mstream\u001b[0;34m(self, input, config, context, stream_mode, print_mode, output_keys, interrupt_before, interrupt_after, durability, control, subgraphs, debug, version, **kwargs)\u001b[0m\n\u001b[1;32m   3058\u001b[0m                     \u001b[0;32mfor\u001b[0m \u001b[0mtask\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mloop\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mmatch_cached_writes\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   3059\u001b[0m                         \u001b[0mloop\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mput_writes\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mtask\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mid\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mtask\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mwrites\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcached\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0;32mTrue\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 3060\u001b[0;31m                     for _ in runner.tick(\n\u001b[0m\u001b[1;32m   3061\u001b[0m                         \u001b[0;34m[\u001b[0m\u001b[0mt\u001b[0m \u001b[0;32mfor\u001b[0m \u001b[0mt\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mloop\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mtasks\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mvalues\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;32mif\u001b[0m \u001b[0;32mnot\u001b[0m \u001b[0mt\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mwrites\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   3062\u001b[0m                         \u001b[0mtimeout\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mstep_timeout\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langgraph/pregel/_runner.py\u001b[0m in \u001b[0;36mtick\u001b[0;34m(self, tasks, reraise, timeout, retry_policy, get_waiter, schedule_task)\u001b[0m\n\u001b[1;32m    202\u001b[0m             \u001b[0mscheduled_error_handler\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;32mFalse\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    203\u001b[0m             \u001b[0;32mtry\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 204\u001b[0;31m                 run_with_retry(\n\u001b[0m\u001b[1;32m    205\u001b[0m                     \u001b[0mt\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    206\u001b[0m                     \u001b[0mretry_policy\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langgraph/pregel/_retry.py\u001b[0m in \u001b[0;36mrun_with_retry\u001b[0;34m(task, retry_policy, configurable)\u001b[0m\n\u001b[1;32m    616\u001b[0m             \u001b[0mtask\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mwrites\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mclear\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    617\u001b[0m             \u001b[0;31m# run the task\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 618\u001b[0;31m             \u001b[0;32mreturn\u001b[0m \u001b[0mtask\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mproc\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minvoke\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mtask\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minput\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    619\u001b[0m         \u001b[0;32mexcept\u001b[0m \u001b[0mParentCommand\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0mexc\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    620\u001b[0m             \u001b[0mns\u001b[0m\u001b[0;34m:\u001b[0m \u001b[0mstr\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0mCONF\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m[\u001b[0m\u001b[0mCONFIG_KEY_CHECKPOINT_NS\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langgraph/_internal/_runnable.py\u001b[0m in \u001b[0;36minvoke\u001b[0;34m(self, input, config, **kwargs)\u001b[0m\n\u001b[1;32m    792\u001b[0m                     \u001b[0;31m# run in context\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    793\u001b[0m                     \u001b[0;32mwith\u001b[0m \u001b[0mset_config_context\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mconfig\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mrun\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0mcontext\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 794\u001b[0;31m                         \u001b[0minput\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mcontext\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mrun\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mstep\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minvoke\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0minput\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    795\u001b[0m                 \u001b[0;32melse\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    796\u001b[0m                     \u001b[0minput\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mstep\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minvoke\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0minput\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langgraph/_internal/_runnable.py\u001b[0m in \u001b[0;36minvoke\u001b[0;34m(self, input, config, **kwargs)\u001b[0m\n\u001b[1;32m    477\u001b[0m                 \u001b[0mrun_manager\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mon_chain_end\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mret\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    478\u001b[0m         \u001b[0;32melse\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 479\u001b[0;31m             \u001b[0mret\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mfunc\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m*\u001b[0m\u001b[0margs\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    480\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mrecurse\u001b[0m \u001b[0;32mand\u001b[0m \u001b[0misinstance\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mret\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mRunnable\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    481\u001b[0m             \u001b[0;32mreturn\u001b[0m \u001b[0mret\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minvoke\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0minput\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain/agents/factory.py\u001b[0m in \u001b[0;36mmodel_node\u001b[0;34m(state, runtime)\u001b[0m\n\u001b[1;32m   1534\u001b[0m         \u001b[0mhas_structured_output\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0minitial_response_format\u001b[0m \u001b[0;32mis\u001b[0m \u001b[0;32mnot\u001b[0m \u001b[0;32mNone\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1535\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0mwrap_model_call_handler\u001b[0m \u001b[0;32mis\u001b[0m \u001b[0;32mNone\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 1536\u001b[0;31m             \u001b[0mmodel_response\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0m_execute_model_sync\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mrequest\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   1537\u001b[0m             return _build_commands(\n\u001b[1;32m   1538\u001b[0m                 \u001b[0mmodel_response\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain/agents/factory.py\u001b[0m in \u001b[0;36m_execute_model_sync\u001b[0;34m(request)\u001b[0m\n\u001b[1;32m   1504\u001b[0m             \u001b[0mmessages\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;34m[\u001b[0m\u001b[0mrequest\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0msystem_message\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m*\u001b[0m\u001b[0mmessages\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1505\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 1506\u001b[0;31m         \u001b[0moutput\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mmodel_\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minvoke\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mmessages\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   1507\u001b[0m         \u001b[0;32mif\u001b[0m \u001b[0mname\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1508\u001b[0m             \u001b[0moutput\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mname\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mname\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_core/runnables/base.py\u001b[0m in \u001b[0;36minvoke\u001b[0;34m(self, input, config, **kwargs)\u001b[0m\n\u001b[1;32m   5999\u001b[0m         \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m:\u001b[0m \u001b[0mAny\u001b[0m \u001b[0;34m|\u001b[0m \u001b[0;32mNone\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   6000\u001b[0m     ) -> Output:\n\u001b[0;32m-> 6001\u001b[0;31m         return self.bound.invoke(\n\u001b[0m\u001b[1;32m   6002\u001b[0m             \u001b[0minput\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   6003\u001b[0m             \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_merge_configs\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mconfig\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_google_genai/chat_models.py\u001b[0m in \u001b[0;36minvoke\u001b[0;34m(self, input, config, code_execution, stop, **kwargs)\u001b[0m\n\u001b[1;32m   3713\u001b[0m                 \u001b[0;32mraise\u001b[0m \u001b[0mValueError\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mmsg\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   3714\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 3715\u001b[0;31m         \u001b[0;32mreturn\u001b[0m \u001b[0msuper\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0minvoke\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0minput\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mconfig\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstop\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mstop\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   3716\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   3717\u001b[0m     def _get_ls_params(\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_core/language_models/chat_models.py\u001b[0m in \u001b[0;36minvoke\u001b[0;34m(self, input, config, stop, **kwargs)\u001b[0m\n\u001b[1;32m    527\u001b[0m             cast(\n\u001b[1;32m    528\u001b[0m                 \u001b[0;34m\"ChatGeneration\"\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 529\u001b[0;31m                 self.generate_prompt(\n\u001b[0m\u001b[1;32m    530\u001b[0m                     \u001b[0;34m[\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_convert_input\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0minput\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    531\u001b[0m                     \u001b[0mstop\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mstop\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_core/language_models/chat_models.py\u001b[0m in \u001b[0;36mgenerate_prompt\u001b[0;34m(self, prompts, stop, callbacks, **kwargs)\u001b[0m\n\u001b[1;32m   1918\u001b[0m     ) -> LLMResult:\n\u001b[1;32m   1919\u001b[0m         \u001b[0mprompt_messages\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;34m[\u001b[0m\u001b[0mp\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mto_messages\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;32mfor\u001b[0m \u001b[0mp\u001b[0m \u001b[0;32min\u001b[0m \u001b[0mprompts\u001b[0m\u001b[0;34m]\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 1920\u001b[0;31m         \u001b[0;32mreturn\u001b[0m \u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mgenerate\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mprompt_messages\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstop\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mstop\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mcallbacks\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mcallbacks\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   1921\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1922\u001b[0m     \u001b[0;34m@\u001b[0m\u001b[0moverride\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_core/language_models/chat_models.py\u001b[0m in \u001b[0;36mgenerate\u001b[0;34m(self, messages, stop, callbacks, tags, metadata, run_name, run_id, **kwargs)\u001b[0m\n\u001b[1;32m   1725\u001b[0m             \u001b[0;32mtry\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1726\u001b[0m                 results.append(\n\u001b[0;32m-> 1727\u001b[0;31m                     self._generate_with_cache(\n\u001b[0m\u001b[1;32m   1728\u001b[0m                         \u001b[0mm\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   1729\u001b[0m                         \u001b[0mstop\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mstop\u001b[0m\u001b[0;34m,\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_core/language_models/chat_models.py\u001b[0m in \u001b[0;36m_generate_with_cache\u001b[0;34m(self, messages, stop, run_manager, **kwargs)\u001b[0m\n\u001b[1;32m   2063\u001b[0m             \u001b[0mresult\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0mgenerate_from_stream\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0miter\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mchunks\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   2064\u001b[0m         \u001b[0;32melif\u001b[0m \u001b[0m_signature_parameters\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mself\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0m_generate\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mget\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0;34m\"run_manager\"\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 2065\u001b[0;31m             result = self._generate(\n\u001b[0m\u001b[1;32m   2066\u001b[0m                 \u001b[0mmessages\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mstop\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mstop\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mrun_manager\u001b[0m\u001b[0;34m=\u001b[0m\u001b[0mrun_manager\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0;34m**\u001b[0m\u001b[0mkwargs\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   2067\u001b[0m             )\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_google_genai/chat_models.py\u001b[0m in \u001b[0;36m_generate\u001b[0;34m(self, messages, stop, run_manager, tools, functions, safety_settings, tool_config, generation_config, cached_content, tool_choice, **kwargs)\u001b[0m\n\u001b[1;32m   4330\u001b[0m             )\n\u001b[1;32m   4331\u001b[0m         \u001b[0;32mexcept\u001b[0m \u001b[0mClientError\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0me\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m-> 4332\u001b[0;31m             \u001b[0m_handle_client_error\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0me\u001b[0m\u001b[0;34m,\u001b[0m \u001b[0mrequest\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m   4333\u001b[0m         \u001b[0;32mexcept\u001b[0m \u001b[0mServerError\u001b[0m \u001b[0;32mas\u001b[0m \u001b[0me\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m   4334\u001b[0m             \u001b[0m_handle_server_error\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0me\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;32m/usr/local/lib/python3.13/dist-packages/langchain_google_genai/chat_models.py\u001b[0m in \u001b[0;36m_handle_client_error\u001b[0;34m(e, request)\u001b[0m\n\u001b[1;32m    344\u001b[0m     \u001b[0mmsg\u001b[0m \u001b[0;34m=\u001b[0m \u001b[0;34mf\"Error calling model '{model_name}' ({e.status}): {e}\"\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    345\u001b[0m     \u001b[0;32mif\u001b[0m \u001b[0merror_type\u001b[0m \u001b[0;34m:=\u001b[0m \u001b[0m_CLIENT_ERROR_TYPES\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mget\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0me\u001b[0m\u001b[0;34m.\u001b[0m\u001b[0mcode\u001b[0m\u001b[0;34m)\u001b[0m\u001b[0;34m:\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0;32m--> 346\u001b[0;31m         \u001b[0;32mraise\u001b[0m \u001b[0merror_type\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mmsg\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;32mfrom\u001b[0m \u001b[0me\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[0m\u001b[1;32m    347\u001b[0m     \u001b[0;32mraise\u001b[0m \u001b[0mChatGoogleGenerativeAIError\u001b[0m\u001b[0;34m(\u001b[0m\u001b[0mmsg\u001b[0m\u001b[0;34m)\u001b[0m \u001b[0;32mfrom\u001b[0m \u001b[0me\u001b[0m\u001b[0;34m\u001b[0m\u001b[0;34m\u001b[0m\u001b[0m\n\u001b[1;32m    348\u001b[0m \u001b[0;34m\u001b[0m\u001b[0m\n",
-            "\u001b[0;31mGoogleRateLimitError\u001b[0m: Error calling model 'gemini-3.8-flash' (RESOURCE_EXHAUSTED): 429 RESOURCE_EXHAUSTED. {'error': {'code': 429, 'message': 'You exceeded your current quota, please check your plan and billing details. For more information on this error, head to: https://aistudio.google.com/docs/rate-limits. To monitor your current usage, head to: https://ai.dev/rate-limit. \\n* Quota exceeded for metric: generativelanguage.googleapis.com/generate_content_free_tier_requests, limit: 20, model: gemini-3.8-flash, description: Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.\\nPlease retry in 15h50m11.429717246s.', 'status': 'RESOURCE_EXHAUSTED', 'details': [{'@type': 'type.googleapis.com/google.rpc.Help', 'links': [{'description': 'Learn more about Gemini API quotas', 'url': 'https://aistudio.google.com/docs/rate-limits'}]}, {'@type': 'type.googleapis.com/google.rpc.QuotaFailure', 'violations': [{'description': 'Generate content requests per day limit exceeded on Free Tier. See https://aistudio.google.com/docs/rate-limits.', 'quotaMetric': 'generativelanguage.googleapis.com/generate_content_free_tier_requests', 'quotaId': 'GenerateRequestsPerDayPerProjectPerModel-FreeTier', 'quotaDimensions': {'location': 'global', 'model': 'gemini-3.8-flash'}, 'quotaValue': '20'}]}, {'@type': 'type.googleapis.com/google.rpc.RetryInfo', 'retryDelay': '57011s'}]}}"
-          ]
-        }
-      ]
-    }
-  ]
-}
+"""
+Day 3: Advanced Agent Workflows & Conversational Memory
+Tailoring Assistant with LCEL Memory Chain, Benchmark Evaluation, and LangChain Agent Architecture.
+"""
+
+import os
+import csv
+import getpass
+from dotenv import load_dotenv
+
+# Load environment variables from .env
+load_dotenv()
+
+# Configure Google API Key
+if "GOOGLE_API_KEY" not in os.environ:
+    try:
+        from google.colab import userdata
+        os.environ["GOOGLE_API_KEY"] = userdata.get("GOOGLE_API_KEY")
+    except Exception:
+        api_key = getpass.getpass("Enter your Google API key: ")
+        if api_key:
+            os.environ["GOOGLE_API_KEY"] = api_key
+
+try:
+    from langchain_google_genai import ChatGoogleGenerativeAI
+    from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
+    from langchain_core.output_parsers import StrOutputParser
+except ImportError:
+    raise ImportError("Please install dependencies: pip install langchain-google-genai langchain-core langchain")
+
+# Initialize Gemini LLM
+llm = ChatGoogleGenerativeAI(
+    model=os.getenv("GEMINI_MODEL", "gemini-1.5-flash"),
+    temperature=0.2
+)
+
+# System Prompt with Domain-Specific Facts, Behavioral Rules, and Formatting
+SYSTEM = """
+ROLE:
+You are a friendly assistant for a men's tailoring business.
+
+FACTS:
+- Services include:
+  1. Shirt stitching
+  2. Pant stitching
+  3. Trouser stitching
+  4. Suit stitching
+  5. Blazer stitching
+  6. Kurta stitching
+  7. Clothing alterations
+  8. Custom men's outfits
+- Custom measurements are required for stitching.
+- Pricing depends on garment type, fabric, and design.
+- Customers can enquire about stitching services and prices.
+
+RULES:
+- Only discuss men's tailoring services.
+- Never invent prices or delivery dates.
+- Never promise delivery times or locations.
+- If information is unavailable, say:
+  "I'll check with the tailor."
+- Ask for garment type and design details
+  before discussing pricing.
+- Be polite and professional.
+- Do not assume fabric is provided by the shop.
+
+FORMAT:
+- Keep responses under 50 words.
+- Use simple English or Telugu,
+  matching the customer's language.
+- Use a friendly, conversational tone.
+"""
+
+# Multi-turn Prompt Template with Memory Placeholder
+prompt = ChatPromptTemplate.from_messages([
+    ("system", SYSTEM),
+    MessagesPlaceholder("history"),  # Conversational history goes here
+    ("human", "{question}"),
+])
+
+# LangChain Expression Language (LCEL) Chain
+chain = prompt | llm | StrOutputParser()
+
+# Conversational state memory
+history = []
+
+
+def ask(question: str) -> str:
+    """Send a user query to the tailoring assistant and update conversational memory."""
+    answer = chain.invoke({"history": history, "question": question})
+    history.extend([("human", question), ("ai", answer)])
+    return answer
+
+
+def run_tests(path: str = "test.csv") -> None:
+    """Run automated evaluation against a benchmark dataset."""
+    if not os.path.exists(path):
+        print(f"Test file '{path}' not found. Skipping CSV benchmark.")
+        return
+
+    with open(path, mode="r", encoding="utf-8") as f:
+        rows = list(csv.DictReader(f))
+
+    passed = 0
+    for row in rows:
+        answer = chain.invoke({"history": [], "question": row["question"]})
+        ok = row.get("must_include", "").lower() in answer.lower()
+        passed += ok
+        print("PASS" if ok else "FAIL", "|", row["question"], "→", answer[:70])
+    print(f"\n{passed}/{len(rows)} passed ({passed / len(rows):.0%})")
+
+
+def create_tailoring_agent():
+    """Create tailoring assistant using LangChain agent architecture."""
+    try:
+        from langchain.agents import create_agent
+        return create_agent(
+            model=llm,
+            tools=[],
+            system_prompt=SYSTEM
+        )
+    except Exception as e:
+        print(f"Agent creation note: {e}")
+        return None
+
+
+if __name__ == "__main__":
+    print("--- 1. Multi-Turn Tailoring Assistant (Conversational Memory) ---")
+    q1 = "Hi, I'm Veky. Do you stitch suits?"
+    print(f"Customer: {q1}")
+    try:
+        print(f"Assistant: {ask(q1)}\n")
+    except Exception as e:
+        print(f"Response/API Note: {e}\n")
+
+    q2 = "What's my name?"
+    print(f"Customer: {q2}")
+    try:
+        print(f"Assistant: {ask(q2)}\n")
+    except Exception as e:
+        print(f"Response/API Note: {e}\n")
+
+    print("--- 2. Autonomous Agent Architecture Test ---")
+    agent_order = create_tailoring_agent()
+    if agent_order:
+        agent_query = "Do you stitch formal shirts?"
+        print(f"Customer: {agent_query}")
+        try:
+            result_order = agent_order.invoke({
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": agent_query
+                    }
+                ]
+            })
+            print(f"Agent: {result_order['messages'][-1].content}\n")
+        except Exception as e:
+            print(f"Agent execution note: {e}\n")
