@@ -17,6 +17,9 @@ This repository contains the practical assignments and code developed during the
 ├── Day-3/
 │   ├── task.py             # Tailoring Assistant with Memory, Evaluation & Agent Workflows
 │   └── README.md           # Day 3 learnings and documentation
+├── Day-4/
+│   ├── task.py             # Tool Use, Structured Outputs & Execution Tracing
+│   └── README.md           # Day 4 learnings and documentation
 ├── .env.example
 ├── .gitignore
 └── README.md
@@ -31,6 +34,7 @@ This repository contains the practical assignments and code developed during the
 | **[Day 1](Day-1/README.md)** | Foundations & Prompt Guardrails | LangChain, Groq Cloud, `openai/gpt-oss-120b`, `llama-prompt-guard-2-22m` | • Sweet Crumbs Bakery persona design<br>• Behavioral rules & formatting limits<br>• Llama Prompt Guard security defense | [`Day-1/task.py`](Day-1/task.py) |
 | **[Day 2](Day-2/README.md)** | Multi-Turn HealthTrack AI Agent | OpenAI SDK, Groq Cloud, `openai/gpt-oss-120b` | • Stateful `HealthTrackAgent` class<br>• Sliding-window conversational memory<br>• Intent routing & JSON entity extraction<br>• API error handling & `@log_call` decorator | [`Day-2/task.py`](Day-2/task.py) |
 | **[Day 3](Day-3/README.md)** | Conversational Memory & Agent Workflows | LangChain, Google GenAI, `gemini-1.5-flash`, LangGraph | • Men's Tailoring Assistant (bilingual)<br>• LCEL chain with `MessagesPlaceholder`<br>• Automated benchmark suite (`test.csv`)<br>• Autonomous agent via `create_agent` | [`Day-3/task.py`](Day-3/task.py) |
+| **[Day 4](Day-4/README.md)** | Tool Calling, Structured Outputs & Tracing | LangChain, Groq Cloud, `openai/gpt-oss-20b`, Pydantic, gspread | • Pydantic `TailoringOrder` schema validation<br>• Structured output parsing from messy text<br>• Google Sheets integration & `@tool` decorators<br>• Tool description sensitivity & trace count metrics | [`Day-4/task.py`](Day-4/task.py) |
 
 ---
 
@@ -53,6 +57,13 @@ This repository contains the practical assignments and code developed during the
 - Benchmark evaluation suite for automated compliance and regression testing (`test.csv`).
 - Autonomous agent workflows initialized with `create_agent`.
 
+### [Day 4: Tool Calling, Structured Outputs & Agent Tracing](Day-4/README.md)
+- Schema-driven order validation using Pydantic models (`TailoringOrder`).
+- Unstructured entity extraction from messy customer messages via `llm.with_structured_output`.
+- Business tool integration (`get_price`, `find_customer`, `log_order`) with Google Sheets persistence.
+- Tool description sensitivity testing (evaluating clear vs ambiguous docstrings on agent behavior).
+- Programmatic call tracing and observability (counting model calls, tool calls, and results).
+
 ---
 
 ## ⚙️ Setup & Execution
@@ -65,7 +76,7 @@ This repository contains the practical assignments and code developed during the
 
 2. **Install dependencies:**
    ```bash
-   pip install openai langchain-groq groq langchain-google-genai langchain-core langchain python-dotenv
+   pip install openai langchain-groq groq langchain-google-genai langchain-core langchain gspread pydantic python-dotenv
    ```
 
 3. **Configure API Keys:**
@@ -84,4 +95,5 @@ This repository contains the practical assignments and code developed during the
    python Day-1/task.py
    python Day-2/task.py
    python Day-3/task.py
+   python Day-4/task.py
    ```

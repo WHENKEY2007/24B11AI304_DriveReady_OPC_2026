@@ -1,492 +1,369 @@
-{
-  "cells": [
-    {
-      "cell_type": "markdown",
-      "metadata": {
-        "id": "view-in-github",
-        "colab_type": "text"
-      },
-      "source": [
-        "<a href=\"https://colab.research.google.com/github/WHENKEY2007/24B11AI304_DriveReady_OPC_2026/blob/main/Day-4/task.py\" target=\"_parent\"><img src=\"https://colab.research.google.com/assets/colab-badge.svg\" alt=\"Open In Colab\"/></a>"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 1,
-      "id": "14d4a58d",
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/"
-        },
-        "id": "14d4a58d",
-        "outputId": "8a4e1d22-5d64-45d9-bf57-c7fb3826dce6"
-      },
-      "outputs": [
-        {
-          "output_type": "stream",
-          "name": "stdout",
-          "text": [
-            "Spreadsheet: https://docs.google.com/spreadsheets/d/1RQCg_ywxaIttxwe22mjJCIPMLEhc3kTaS_WgeSzV4cU\n"
-          ]
+"""
+Day 4: Tool Use, Structured Outputs & Agent Tracing
+Balu Tailors Workshop Assistant: Pydantic Validation, Dynamic Tool Binding,
+Google Sheets Persistence, and Execution Trace Counting.
+"""
+
+import os
+import json
+import getpass
+from typing import Optional, Literal, Dict, Any, List
+from dotenv import load_dotenv
+from pydantic import BaseModel, Field
+
+# Load environment variables
+load_dotenv()
+
+# Setup Groq API Key
+if "GROQ_API_KEY" not in os.environ:
+    try:
+        from google.colab import userdata
+        os.environ["GROQ_API_KEY"] = userdata.get("GROQ_API_KEY")
+    except Exception:
+        api_key = getpass.getpass("Enter your Groq API key: ")
+        if api_key:
+            os.environ["GROQ_API_KEY"] = api_key
+
+try:
+    from langchain_groq import ChatGroq
+    from langchain.tools import tool
+    from langchain.agents import create_agent
+    from langchain_core.messages import AIMessage, ToolMessage
+except ImportError:
+    raise ImportError("Please install dependencies: pip install langchain langchain-groq pydantic")
+
+# Initialize ChatGroq LLM
+llm = ChatGroq(
+    model="openai/gpt-oss-20b",
+    temperature=0.2,
+    max_retries=3
+)
+
+# ---------------------------------------------------------------------------
+# Google Sheets Setup (with In-Memory Fallback for Local / Non-Colab Execution)
+# ---------------------------------------------------------------------------
+worksheets: Dict[str, Any] = {}
+
+class LocalWorksheetFallback:
+    """Mock worksheet providing get_all_records and append_row for local execution."""
+    def __init__(self, title: str, headers: List[str]):
+        self.title = title
+        self.headers = headers
+        self.data: List[List[Any]] = [headers]
+
+    def get_all_records(self) -> List[Dict[str, Any]]:
+        if len(self.data) < 2:
+            return []
+        keys = self.data[0]
+        return [dict(zip(keys, row)) for row in self.data[1:]]
+
+    def get_all_values(self) -> List[List[Any]]:
+        return self.data
+
+    def append_row(self, row: List[Any]):
+        self.data.append(row)
+
+
+def init_storage():
+    """Initialize Google Sheets via gspread or fallback to in-memory store."""
+    global worksheets
+    try:
+        from google.colab import auth
+        from google.auth import default
+        import gspread
+
+        auth.authenticate_user()
+        creds, _ = default()
+        gc = gspread.authorize(creds)
+        sheet_name = "Balu Tailors Day4 Practice"
+        try:
+            sh = gc.open(sheet_name)
+        except gspread.SpreadsheetNotFound:
+            sh = gc.create(sheet_name)
+
+        headers_map = {
+            "customers": ["id", "customer_code", "name", "phone", "notes", "created_at", "updated_at"],
+            "orders": ["id", "order_number", "customer_id", "garment_type", "order_date",
+                       "delivery_date", "status", "price", "advance", "notes", "measurements",
+                       "worker_id", "worker_name", "cutting_status", "stitching_status",
+                       "worker_rate", "cloth_photo", "cloth_color", "group_id", "pair_label",
+                       "created_at", "updated_at"],
+            "price_settings": ["id", "shirt_price", "pant_price", "pair_price",
+                               "kurta_price", "blouse_price", "safari_price", "updated_at"]
         }
-      ],
-      "source": [
-        "!pip install -q langchain langchain-groq gspread pydantic\n",
-        "\n",
-        "import os\n",
-        "from google.colab import userdata, auth\n",
-        "os.environ[\"GROQ_API_KEY\"] = userdata.get(\"GROQ_API_KEY\")\n",
-        "\n",
-        "from langchain_groq import ChatGroq\n",
-        "llm = ChatGroq(model=\"openai/gpt-oss-20b\", temperature=0.2, max_retries=3)\n",
-        "\n",
-        "# Google Sheets setup (run once; on later runs, open the existing spreadsheet)\n",
-        "auth.authenticate_user()\n",
-        "import gspread\n",
-        "from google.auth import default\n",
-        "creds, _ = default()\n",
-        "gc = gspread.authorize(creds)\n",
-        "\n",
-        "SHEET_NAME = \"Balu Tailors Day4 Practice\"\n",
-        "try:\n",
-        "    sh = gc.open(SHEET_NAME)\n",
-        "except gspread.SpreadsheetNotFound:\n",
-        "    sh = gc.create(SHEET_NAME)\n",
-        "\n",
-        "HEADERS = {\n",
-        "    \"customers\": [\"id\", \"customer_code\", \"name\", \"phone\", \"notes\", \"created_at\", \"updated_at\"],\n",
-        "    \"orders\": [\"id\", \"order_number\", \"customer_id\", \"garment_type\", \"order_date\",\n",
-        "               \"delivery_date\", \"status\", \"price\", \"advance\", \"notes\", \"measurements\",\n",
-        "               \"worker_id\", \"worker_name\", \"cutting_status\", \"stitching_status\",\n",
-        "               \"worker_rate\", \"cloth_photo\", \"cloth_color\", \"group_id\", \"pair_label\",\n",
-        "               \"created_at\", \"updated_at\"],\n",
-        "    \"price_settings\": [\"id\", \"shirt_price\", \"pant_price\", \"pair_price\",\n",
-        "                       \"kurta_price\", \"blouse_price\", \"safari_price\", \"updated_at\"]\n",
-        "}\n",
-        "\n",
-        "worksheets = {}\n",
-        "existing_titles = [w.title for w in sh.worksheets()]\n",
-        "for title, headers in HEADERS.items():\n",
-        "    if title in existing_titles:\n",
-        "        ws = sh.worksheet(title)\n",
-        "    else:\n",
-        "        ws = sh.add_worksheet(title=title, rows=1000, cols=len(headers))\n",
-        "        ws.append_row(headers)\n",
-        "    worksheets[title] = ws\n",
-        "\n",
-        "# Insert the sample SQL seed prices only if the price sheet has no data rows.\n",
-        "if len(worksheets[\"price_settings\"].get_all_values()) < 2:\n",
-        "    worksheets[\"price_settings\"].append_row([\"default\", 400, 450, 800, 550, 400, 750, \"\"])\n",
-        "\n",
-        "print(\"Spreadsheet:\", sh.url)\n"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 2,
-      "id": "1eb25a3a",
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/"
-        },
-        "id": "1eb25a3a",
-        "outputId": "04edce0b-1da4-4439-920d-e58561875e81"
-      },
-      "outputs": [
-        {
-          "output_type": "stream",
-          "name": "stdout",
-          "text": [
-            "\\n--- Messy message 1 ---\n",
-            "Ravi, customer C001, needs a shirt. Ordered today 26 Nov 2026, deliver 5 Dec 2026. Measurements chest 40, length 29. Price 400, paid 100 advance.\n",
-            "{'id': None, 'order_number': None, 'customer_id': 'C001', 'garment_type': 'shirt', 'order_date': '2026-11-26', 'delivery_date': '2026-12-05', 'status': 'Pending', 'price': 400.0, 'advance': 100.0, 'notes': '', 'measurements': 'chest 40, length 29', 'worker_id': '', 'worker_name': '', 'cutting_status': 'Pending', 'stitching_status': 'Pending', 'worker_rate': None, 'cloth_photo': '', 'cloth_color': '', 'group_id': '', 'pair_label': ''}\n",
-            "\\n--- Messy message 2 ---\n",
-            "Need one black pant for customer C002, delivery next Friday. Pant length 40 waist 32. Price not decided yet.\n",
-            "{'id': None, 'order_number': None, 'customer_id': 'C002', 'garment_type': 'Pant', 'order_date': '2026-11-26', 'delivery_date': '2026-11-27', 'status': 'Pending', 'price': None, 'advance': 0, 'notes': 'Black pant, length 40, waist 32', 'measurements': 'Length: 40, Waist: 32', 'worker_id': '', 'worker_name': '', 'cutting_status': 'Pending', 'stitching_status': 'Pending', 'worker_rate': None, 'cloth_photo': '', 'cloth_color': 'Black', 'group_id': '', 'pair_label': 'Pant'}\n",
-            "\\n--- Messy message 3 ---\n",
-            "C003 wants a kurta, blue cloth. Take order date as 2026-11-26 and delivery 2026-12-10. Rs 550, no advance.\n",
-            "{'id': None, 'order_number': None, 'customer_id': 'C003', 'garment_type': 'kurta', 'order_date': '2026-11-26', 'delivery_date': '2026-12-10', 'status': 'Pending', 'price': 550.0, 'advance': 0.0, 'notes': '', 'measurements': '', 'worker_id': '', 'worker_name': '', 'cutting_status': 'Pending', 'stitching_status': 'Pending', 'worker_rate': None, 'cloth_photo': '', 'cloth_color': 'blue', 'group_id': '', 'pair_label': ''}\n",
-            "\\n--- Messy message 4 ---\n",
-            "Please make a blouse for customer C004; delivery 2026-12-02. Measurements: bust 36, waist 30. Colour maroon. No price mentioned.\n",
-            "{'id': None, 'order_number': None, 'customer_id': 'C004', 'garment_type': 'blouse', 'order_date': None, 'delivery_date': '2026-12-02', 'status': 'Pending', 'price': None, 'advance': 0, 'notes': '', 'measurements': 'bust 36, waist 30', 'worker_id': '', 'worker_name': '', 'cutting_status': 'Pending', 'stitching_status': 'Pending', 'worker_rate': None, 'cloth_photo': '', 'cloth_color': 'maroon', 'group_id': '', 'pair_label': ''}\n",
-            "\\n--- Messy message 5 ---\n",
-            "Customer C005 ordered a shirt and pant as a set, group G55. Shirt is pair A, pant is pair B. Deliver 2026-12-15.\n",
-            "{'id': None, 'order_number': 'ORD-20261126-001', 'customer_id': 'C005', 'garment_type': 'Shirt & Pant Set', 'order_date': '2026-11-26', 'delivery_date': '2026-12-15', 'status': 'Pending', 'price': None, 'advance': None, 'notes': 'Set order', 'measurements': None, 'worker_id': None, 'worker_name': None, 'cutting_status': 'Pending', 'stitching_status': 'Pending', 'worker_rate': None, 'cloth_photo': None, 'cloth_color': None, 'group_id': 'G55', 'pair_label': 'A,B'}\n"
-          ]
+        existing = [w.title for w in sh.worksheets()]
+        for t, h in headers_map.items():
+            if t in existing:
+                ws = sh.worksheet(t)
+            else:
+                ws = sh.add_worksheet(title=t, rows=1000, cols=len(h))
+                ws.append_row(h)
+            worksheets[t] = ws
+
+        if len(worksheets["price_settings"].get_all_values()) < 2:
+            worksheets["price_settings"].append_row(["default", 400, 450, 800, 550, 400, 750, ""])
+
+        print(f"Connected to Google Sheets: {sh.url}")
+    except Exception:
+        # Fallback for local runtime
+        headers_map = {
+            "customers": ["id", "customer_code", "name", "phone", "notes", "created_at", "updated_at"],
+            "orders": ["id", "order_number", "customer_id", "garment_type", "order_date",
+                       "delivery_date", "status", "price", "advance", "notes", "measurements",
+                       "worker_id", "worker_name", "cutting_status", "stitching_status",
+                       "worker_rate", "cloth_photo", "cloth_color", "group_id", "pair_label",
+                       "created_at", "updated_at"],
+            "price_settings": ["id", "shirt_price", "pant_price", "pair_price",
+                               "kurta_price", "blouse_price", "safari_price", "updated_at"]
         }
-      ],
-      "source": [
-        "# TASK 1 + TASK 2: two clearly described business tools and a Pydantic order record\n",
-        "\n",
-        "from typing import Optional, Literal\n",
-        "from pydantic import BaseModel, Field\n",
-        "from langchain.tools import tool\n",
-        "\n",
-        "class TailoringOrder(BaseModel):\n",
-        "    # Fields correspond to the Balu Tailors orders table.\n",
-        "    id: Optional[str] = Field(default=None, description=\"Unique order ID\")\n",
-        "    order_number: Optional[str] = None\n",
-        "    customer_id: Optional[str] = Field(default=None, description=\"Existing customer ID\")\n",
-        "    garment_type: Optional[str] = Field(default=None, description=\"Garment type, e.g. shirt, pant, blouse\")\n",
-        "    order_date: Optional[str] = Field(default=None, description=\"Order date in YYYY-MM-DD format\")\n",
-        "    delivery_date: Optional[str] = Field(default=None, description=\"Delivery date in YYYY-MM-DD format\")\n",
-        "    status: Literal[\"Pending\", \"Ready\", \"Delivered\", \"Cancelled\"] = \"Pending\"\n",
-        "    price: Optional[float] = Field(default=None, ge=0)\n",
-        "    advance: Optional[float] = Field(default=0, ge=0)\n",
-        "    notes: Optional[str] = \"\"\n",
-        "    measurements: Optional[str] = \"\"\n",
-        "    worker_id: Optional[str] = \"\"\n",
-        "    worker_name: Optional[str] = \"\"\n",
-        "    cutting_status: Literal[\"Pending\", \"Cut Completed\"] = \"Pending\"\n",
-        "    stitching_status: Literal[\"Pending\", \"In Stitching\", \"Completed\"] = \"Pending\"\n",
-        "    worker_rate: Optional[float] = Field(default=None, ge=0)\n",
-        "    cloth_photo: Optional[str] = \"\"\n",
-        "    cloth_color: Optional[str] = \"\"\n",
-        "    group_id: Optional[str] = \"\"\n",
-        "    pair_label: Optional[str] = \"\"\n",
-        "\n",
-        "# Read the five default prices from the price_settings worksheet.\n",
-        "def read_prices():\n",
-        "    rows = worksheets[\"price_settings\"].get_all_records()\n",
-        "    if not rows:\n",
-        "        return {}\n",
-        "    row = rows[-1]\n",
-        "    return {\n",
-        "        \"shirt\": float(row.get(\"shirt_price\") or 0),\n",
-        "        \"pant\": float(row.get(\"pant_price\") or 0),\n",
-        "        \"pair\": float(row.get(\"pair_price\") or 0),\n",
-        "        \"kurta\": float(row.get(\"kurta_price\") or 0),\n",
-        "        \"blouse\": float(row.get(\"blouse_price\") or 0),\n",
-        "        \"safari\": float(row.get(\"safari_price\") or 0),\n",
-        "    }\n",
-        "\n",
-        "@tool\n",
-        "def get_price(garment_type: str, quantity: int = 1) -> str:\n",
-        "    \"\"\"Look up Balu Tailors' default price for a garment.\n",
-        "\n",
-        "    Use when a customer asks the price of a shirt, pant, pair, kurta,\n",
-        "    blouse or safari. This returns a base estimate, not a final custom quote.\n",
-        "\n",
-        "    Args:\n",
-        "        garment_type: Garment name such as shirt, pant, pair, kurta, blouse or safari.\n",
-        "        quantity: Number of the same garment.\n",
-        "    \"\"\"\n",
-        "    if quantity < 1:\n",
-        "        return \"Quantity must be at least 1.\"\n",
-        "    prices = read_prices()\n",
-        "    key = garment_type.lower().strip()\n",
-        "    if key not in prices:\n",
-        "        return \"Price not found. Available garments: \" + \", \".join(prices.keys())\n",
-        "    return f\"{quantity} {key}(s): Rs {prices[key] * quantity:.2f} (base price)\"\n",
-        "\n",
-        "@tool\n",
-        "def find_customer(search_text: str) -> str:\n",
-        "    \"\"\"Find a Balu Tailors customer by name, phone number or customer ID.\n",
-        "\n",
-        "    Use before creating an order when you need to identify an existing customer.\n",
-        "\n",
-        "    Args:\n",
-        "        search_text: Customer name, phone number or customer ID to search for.\n",
-        "    \"\"\"\n",
-        "    rows = worksheets[\"customers\"].get_all_records()\n",
-        "    q = search_text.lower().strip()\n",
-        "    matches = [r for r in rows if q in str(r.get(\"id\", \"\")).lower()\n",
-        "               or q in str(r.get(\"name\", \"\")).lower()\n",
-        "               or q in str(r.get(\"phone\", \"\"))]\n",
-        "    if not matches:\n",
-        "        return \"No matching customer found.\"\n",
-        "    return str(matches[:10])\n",
-        "\n",
-        "# TASK 2: test structured output on five messy customer messages.\n",
-        "order_extractor = llm.with_structured_output(TailoringOrder)\n",
-        "\n",
-        "messy_messages = [\n",
-        "    \"Ravi, customer C001, needs a shirt. Ordered today 26 Nov 2026, deliver 5 Dec 2026. Measurements chest 40, length 29. Price 400, paid 100 advance.\",\n",
-        "    \"Need one black pant for customer C002, delivery next Friday. Pant length 40 waist 32. Price not decided yet.\",\n",
-        "    \"C003 wants a kurta, blue cloth. Take order date as 2026-11-26 and delivery 2026-12-10. Rs 550, no advance.\",\n",
-        "    \"Please make a blouse for customer C004; delivery 2026-12-02. Measurements: bust 36, waist 30. Colour maroon. No price mentioned.\",\n",
-        "    \"Customer C005 ordered a shirt and pant as a set, group G55. Shirt is pair A, pant is pair B. Deliver 2026-12-15.\"\n",
-        "]\n",
-        "\n",
-        "for i, message in enumerate(messy_messages, start=1):\n",
-        "    print(f\"\\\\n--- Messy message {i} ---\")\n",
-        "    print(message)\n",
-        "    parsed = order_extractor.invoke(message)\n",
-        "    print(parsed.model_dump())\n"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 3,
-      "id": "a3a520e6",
-      "metadata": {
-        "id": "a3a520e6"
-      },
-      "outputs": [],
-      "source": [
-        "# TASK 3: Google Sheet logging tool for one tailoring order\n",
-        "\n",
-        "@tool\n",
-        "def log_order(\n",
-        "    id: str,\n",
-        "    customer_id: str,\n",
-        "    garment_type: str,\n",
-        "    order_date: str,\n",
-        "    delivery_date: str,\n",
-        "    measurements: str,\n",
-        "    price: float,\n",
-        "    advance: float = 0,\n",
-        "    notes: str = \"\",\n",
-        "    worker_id: str = \"\",\n",
-        "    worker_name: str = \"\",\n",
-        "    cloth_color: str = \"\",\n",
-        "    group_id: str = \"\",\n",
-        "    pair_label: str = \"\"\n",
-        ") -> str:\n",
-        "    \"\"\"Validate and save one tailoring order to the Balu Tailors orders worksheet.\n",
-        "\n",
-        "    Use only after the customer ID, garment, dates, measurements and price\n",
-        "    have been confirmed. The app schema stores one garment per order row;\n",
-        "    related garments can share a group_id and have different pair_label values.\n",
-        "\n",
-        "    Args:\n",
-        "        id: Unique order ID.\n",
-        "        customer_id: Existing customer ID from the customers worksheet.\n",
-        "        garment_type: Garment being stitched.\n",
-        "        order_date: Order date in YYYY-MM-DD format.\n",
-        "        delivery_date: Delivery date in YYYY-MM-DD format.\n",
-        "        measurements: Measurement details for this garment.\n",
-        "        price: Agreed price for this order.\n",
-        "        advance: Advance amount received, if any.\n",
-        "        notes: Additional order notes.\n",
-        "        worker_id: Assigned worker ID, if known.\n",
-        "        worker_name: Assigned worker name, if known.\n",
-        "        cloth_color: Cloth colour.\n",
-        "        group_id: Shared ID for related garments.\n",
-        "        pair_label: Label for this garment within a group.\n",
-        "    \"\"\"\n",
-        "    try:\n",
-        "        record = TailoringOrder(\n",
-        "            id=id, customer_id=customer_id, garment_type=garment_type,\n",
-        "            order_date=order_date, delivery_date=delivery_date,\n",
-        "            measurements=measurements, price=price, advance=advance,\n",
-        "            notes=notes, worker_id=worker_id, worker_name=worker_name,\n",
-        "            cloth_color=cloth_color, group_id=group_id, pair_label=pair_label\n",
-        "        )\n",
-        "        # Match the exact column order in the supplied orders table.\n",
-        "        worksheets[\"orders\"].append_row([\n",
-        "            record.id, record.order_number or \"\", record.customer_id,\n",
-        "            record.garment_type, record.order_date, record.delivery_date,\n",
-        "            record.status, record.price, record.advance, record.notes,\n",
-        "            record.measurements, record.worker_id, record.worker_name,\n",
-        "            record.cutting_status, record.stitching_status,\n",
-        "            record.worker_rate or \"\", record.cloth_photo or \"\",\n",
-        "            record.cloth_color, record.group_id, record.pair_label, \"\", \"\"\n",
-        "        ])\n",
-        "        return f\"Order {record.id} saved successfully for customer {record.customer_id}.\"\n",
-        "    except Exception as e:\n",
-        "        return f\"Order was not saved: {e}\"\n",
-        "\n",
-        "# Optional direct test of the log_order tool (uses a clearly marked practice record).\n",
-        "# Uncomment only if you want to add this sample row to your worksheet.\n",
-        "# print(log_order.invoke({\n",
-        "#     \"id\": \"DEMO001\", \"customer_id\": \"C001\", \"garment_type\": \"shirt\",\n",
-        "#     \"order_date\": \"2026-11-26\", \"delivery_date\": \"2026-12-05\",\n",
-        "#     \"measurements\": \"Chest 40, length 29\", \"price\": 400, \"advance\": 100\n",
-        "# }))\n"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 4,
-      "id": "d428adac",
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/"
-        },
-        "id": "d428adac",
-        "outputId": "e3c31b0a-39a6-4133-8ffb-96e9b991b5c1"
-      },
-      "outputs": [
-        {
-          "output_type": "stream",
-          "name": "stdout",
-          "text": [
-            "Poorly described tool test:\n",
-            "================================\u001b[1m Human Message \u001b[0m=================================\n",
-            "\n",
-            "Use tool1 to get the price of 2 shirts.\n",
-            "==================================\u001b[1m Ai Message \u001b[0m==================================\n",
-            "Tool Calls:\n",
-            "  tool1 (fc_59242288-bfa7-434e-b917-fe875e524021)\n",
-            " Call ID: fc_59242288-bfa7-434e-b917-fe875e524021\n",
-            "  Args:\n",
-            "    garment_type: shirt\n",
-            "    quantity: 2\n",
-            "=================================\u001b[1m Tool Message \u001b[0m=================================\n",
-            "Name: tool1\n",
-            "\n",
-            "2 shirt(s): Rs 800.00 (base price)\n",
-            "==================================\u001b[1m Ai Message \u001b[0m==================================\n",
-            "\n",
-            "The base price for 2 shirts is **Rs 800.00**.\n",
-            "\\nTool restored: get_price\n"
-          ]
-        }
-      ],
-      "source": [
-        "# TASK 4: deliberately make one tool name/description poor, test it, then restore it.\n",
-        "from langchain.agents import create_agent\n",
-        "\n",
-        "SYSTEM = \"\"\"You are the Balu Tailors workshop assistant.\n",
-        "Use get_price for base garment prices, find_customer to look up customers,\n",
-        "and log_order only when all required order details are known.\n",
-        "Never invent missing customer IDs, measurements, dates or prices.\n",
-        "Ask follow-up questions when details are missing.\n",
-        "This notebook uses Google Sheets for practice; it is not connected to live Supabase.\"\"\"\n",
-        "\n",
-        "@tool\n",
-        "def tool1(garment_type: str, quantity: int = 1) -> str:\n",
-        "    \"\"\"does stuff\"\"\"\n",
-        "    return get_price.invoke({\"garment_type\": garment_type, \"quantity\": quantity})\n",
-        "\n",
-        "# Test agent with the poorly named/described tool.\n",
-        "bad_agent = create_agent(model=llm, tools=[tool1, find_customer, log_order], system_prompt=SYSTEM)\n",
-        "bad_result = bad_agent.invoke({\n",
-        "    \"messages\": [{\"role\": \"user\", \"content\": \"Use tool1 to get the price of 2 shirts.\"}]\n",
-        "})\n",
-        "print(\"Poorly described tool test:\")\n",
-        "for message in bad_result[\"messages\"]:\n",
-        "    message.pretty_print()\n",
-        "\n",
-        "# Restore the clear tool name and description by using get_price again.\n",
-        "agent = create_agent(\n",
-        "    model=llm,\n",
-        "    tools=[get_price, find_customer, log_order],\n",
-        "    system_prompt=SYSTEM\n",
-        ")\n",
-        "print(\"\\\\nTool restored: get_price\")\n"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "execution_count": 5,
-      "id": "a5546505",
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/"
-        },
-        "collapsed": true,
-        "id": "a5546505",
-        "outputId": "468da528-8095-45d3-ebc2-9dbffeefc6c0"
-      },
-      "outputs": [
-        {
-          "output_type": "stream",
-          "name": "stdout",
-          "text": [
-            "QUESTION: What is the base price of 2 shirts?\n",
-            "\\n--- FULL TRACE ---\n",
-            "================================\u001b[1m Human Message \u001b[0m=================================\n",
-            "\n",
-            "What is the base price of 2 shirts?\n",
-            "==================================\u001b[1m Ai Message \u001b[0m==================================\n",
-            "Tool Calls:\n",
-            "  get_price (fc_4a4d99e6-b704-4ca4-b947-06690f018234)\n",
-            " Call ID: fc_4a4d99e6-b704-4ca4-b947-06690f018234\n",
-            "  Args:\n",
-            "    garment_type: shirt\n",
-            "    quantity: 2\n",
-            "=================================\u001b[1m Tool Message \u001b[0m=================================\n",
-            "Name: get_price\n",
-            "\n",
-            "2 shirt(s): Rs 800.00 (base price)\n",
-            "==================================\u001b[1m Ai Message \u001b[0m==================================\n",
-            "\n",
-            "The base price for 2 shirts is **Rs 800.00**.\n",
-            "\\n--- TRACE COUNTS ---\n",
-            "Model calls (AI messages): 2\n",
-            "Tool calls requested: 1\n",
-            "Tool results returned: 1\n"
-          ]
-        }
-      ],
-      "source": [
-        "# TASK 5: read the trace and count model calls and tool calls\n",
-        "\n",
-        "from langchain_core.messages import AIMessage, ToolMessage\n",
-        "\n",
-        "question = \"What is the base price of 2 shirts?\"\n",
-        "trace_result = agent.invoke({\"messages\": [{\"role\": \"user\", \"content\": question}]})\n",
-        "\n",
-        "print(\"QUESTION:\", question)\n",
-        "print(\"\\\\n--- FULL TRACE ---\")\n",
-        "for message in trace_result[\"messages\"]:\n",
-        "    message.pretty_print()\n",
-        "\n",
-        "model_calls = sum(1 for message in trace_result[\"messages\"]\n",
-        "                  if isinstance(message, AIMessage))\n",
-        "tool_calls = sum(len(getattr(message, \"tool_calls\", []) or [])\n",
-        "                 for message in trace_result[\"messages\"])\n",
-        "tool_results = sum(1 for message in trace_result[\"messages\"]\n",
-        "                   if isinstance(message, ToolMessage))\n",
-        "\n",
-        "print(\"\\\\n--- TRACE COUNTS ---\")\n",
-        "print(\"Model calls (AI messages):\", model_calls)\n",
-        "print(\"Tool calls requested:\", tool_calls)\n",
-        "print(\"Tool results returned:\", tool_results)\n"
-      ]
-    },
-    {
-      "cell_type": "code",
-      "source": [
-        "result = log_order.invoke({\n",
-        "    \"id\": \"ORD001\",\n",
-        "    \"customer_id\": \"C001\",\n",
-        "    \"garment_type\": \"shirt\",\n",
-        "    \"order_date\": \"2026-11-26\",\n",
-        "    \"delivery_date\": \"2026-12-05\",\n",
-        "    \"measurements\": \"Chest 40, Length 29, Shoulder 17\",\n",
-        "    \"price\": 400,\n",
-        "    \"advance\": 100,\n",
-        "    \"notes\": \"Blue cotton shirt\",\n",
-        "    \"cloth_color\": \"Blue\"\n",
-        "})\n",
-        "\n",
-        "print(result)"
-      ],
-      "metadata": {
-        "colab": {
-          "base_uri": "https://localhost:8080/"
-        },
-        "id": "enbSeKp9okLB",
-        "outputId": "e202e741-86ce-45e4-b3f8-f611ff96b4de"
-      },
-      "id": "enbSeKp9okLB",
-      "execution_count": 6,
-      "outputs": [
-        {
-          "output_type": "stream",
-          "name": "stdout",
-          "text": [
-            "Order ORD001 saved successfully for customer C001.\n"
-          ]
-        }
-      ]
+        for t, h in headers_map.items():
+            worksheets[t] = LocalWorksheetFallback(t, h)
+        worksheets["price_settings"].append_row(["default", 400, 450, 800, 550, 400, 750, ""])
+        worksheets["customers"].append_row(["C001", "CUST-001", "Ravi Kumar", "9876543210", "Regular", "2026-11-26", ""])
+        worksheets["customers"].append_row(["C002", "CUST-002", "Suresh", "9123456780", "New", "2026-11-26", ""])
+
+
+init_storage()
+
+# ---------------------------------------------------------------------------
+# TASK 1: Pydantic Order Schema & Business Tools
+# ---------------------------------------------------------------------------
+class TailoringOrder(BaseModel):
+    """Pydantic model representing a structured order in Balu Tailors system."""
+    id: Optional[str] = Field(default=None, description="Unique order ID")
+    order_number: Optional[str] = None
+    customer_id: Optional[str] = Field(default=None, description="Existing customer ID")
+    garment_type: Optional[str] = Field(default=None, description="Garment type, e.g. shirt, pant, blouse")
+    order_date: Optional[str] = Field(default=None, description="Order date in YYYY-MM-DD format")
+    delivery_date: Optional[str] = Field(default=None, description="Delivery date in YYYY-MM-DD format")
+    status: Literal["Pending", "Ready", "Delivered", "Cancelled"] = "Pending"
+    price: Optional[float] = Field(default=None, ge=0)
+    advance: Optional[float] = Field(default=0, ge=0)
+    notes: Optional[str] = ""
+    measurements: Optional[str] = ""
+    worker_id: Optional[str] = ""
+    worker_name: Optional[str] = ""
+    cutting_status: Literal["Pending", "Cut Completed"] = "Pending"
+    stitching_status: Literal["Pending", "In Stitching", "Completed"] = "Pending"
+    worker_rate: Optional[float] = Field(default=None, ge=0)
+    cloth_photo: Optional[str] = ""
+    cloth_color: Optional[str] = ""
+    group_id: Optional[str] = ""
+    pair_label: Optional[str] = ""
+
+
+def read_prices() -> Dict[str, float]:
+    """Read default prices from the price_settings worksheet."""
+    rows = worksheets["price_settings"].get_all_records()
+    if not rows:
+        return {}
+    row = rows[-1]
+    return {
+        "shirt": float(row.get("shirt_price") or 0),
+        "pant": float(row.get("pant_price") or 0),
+        "pair": float(row.get("pair_price") or 0),
+        "kurta": float(row.get("kurta_price") or 0),
+        "blouse": float(row.get("blouse_price") or 0),
+        "safari": float(row.get("safari_price") or 0),
     }
-  ],
-  "metadata": {
-    "kernelspec": {
-      "display_name": "Python 3",
-      "language": "python",
-      "name": "python3"
-    },
-    "colab": {
-      "provenance": [],
-      "toc_visible": true,
-      "include_colab_link": true
-    }
-  },
-  "nbformat": 4,
-  "nbformat_minor": 5
-}
+
+
+@tool
+def get_price(garment_type: str, quantity: int = 1) -> str:
+    """Look up Balu Tailors' default price for a garment.
+
+    Use when a customer asks the price of a shirt, pant, pair, kurta,
+    blouse or safari. This returns a base estimate, not a final custom quote.
+
+    Args:
+        garment_type: Garment name such as shirt, pant, pair, kurta, blouse or safari.
+        quantity: Number of the same garment.
+    """
+    if quantity < 1:
+        return "Quantity must be at least 1."
+    prices = read_prices()
+    key = garment_type.lower().strip()
+    if key not in prices:
+        return "Price not found. Available garments: " + ", ".join(prices.keys())
+    return f"{quantity} {key}(s): Rs {prices[key] * quantity:.2f} (base price)"
+
+
+@tool
+def find_customer(search_text: str) -> str:
+    """Find a Balu Tailors customer by name, phone number or customer ID.
+
+    Use before creating an order when you need to identify an existing customer.
+
+    Args:
+        search_text: Customer name, phone number or customer ID to search for.
+    """
+    rows = worksheets["customers"].get_all_records()
+    q = search_text.lower().strip()
+    matches = [r for r in rows if q in str(r.get("id", "")).lower()
+               or q in str(r.get("name", "")).lower()
+               or q in str(r.get("phone", ""))]
+    if not matches:
+        return "No matching customer found."
+    return str(matches[:10])
+
+
+# ---------------------------------------------------------------------------
+# TASK 3: Google Sheets Order Logging Tool
+# ---------------------------------------------------------------------------
+@tool
+def log_order(
+    id: str,
+    customer_id: str,
+    garment_type: str,
+    order_date: str,
+    delivery_date: str,
+    measurements: str,
+    price: float,
+    advance: float = 0,
+    notes: str = "",
+    worker_id: str = "",
+    worker_name: str = "",
+    cloth_color: str = "",
+    group_id: str = "",
+    pair_label: str = ""
+) -> str:
+    """Validate and save one tailoring order to the Balu Tailors orders worksheet.
+
+    Use only after the customer ID, garment, dates, measurements and price
+    have been confirmed. The app schema stores one garment per order row;
+    related garments can share a group_id and have different pair_label values.
+
+    Args:
+        id: Unique order ID.
+        customer_id: Existing customer ID from the customers worksheet.
+        garment_type: Garment being stitched.
+        order_date: Order date in YYYY-MM-DD format.
+        delivery_date: Delivery date in YYYY-MM-DD format.
+        measurements: Measurement details for this garment.
+        price: Agreed price for this order.
+        advance: Advance amount received, if any.
+        notes: Additional order notes.
+        worker_id: Assigned worker ID, if known.
+        worker_name: Assigned worker name, if known.
+        cloth_color: Cloth colour.
+        group_id: Shared ID for related garments.
+        pair_label: Label for this garment within a group.
+    """
+    try:
+        record = TailoringOrder(
+            id=id, customer_id=customer_id, garment_type=garment_type,
+            order_date=order_date, delivery_date=delivery_date,
+            measurements=measurements, price=price, advance=advance,
+            notes=notes, worker_id=worker_id, worker_name=worker_name,
+            cloth_color=cloth_color, group_id=group_id, pair_label=pair_label
+        )
+        worksheets["orders"].append_row([
+            record.id, record.order_number or "", record.customer_id,
+            record.garment_type, record.order_date, record.delivery_date,
+            record.status, record.price, record.advance, record.notes,
+            record.measurements, record.worker_id, record.worker_name,
+            record.cutting_status, record.stitching_status,
+            record.worker_rate or "", record.cloth_photo or "",
+            record.cloth_color, record.group_id, record.pair_label, "", ""
+        ])
+        return f"Order {record.id} saved successfully for customer {record.customer_id}."
+    except Exception as e:
+        return f"Order was not saved: {e}"
+
+
+# ---------------------------------------------------------------------------
+# TASK 4: Tool Metadata Experiment (Clear vs Poor Descriptions)
+# ---------------------------------------------------------------------------
+SYSTEM = """You are the Balu Tailors workshop assistant.
+Use get_price for base garment prices, find_customer to look up customers,
+and log_order only when all required order details are known.
+Never invent missing customer IDs, measurements, dates or prices.
+Ask follow-up questions when details are missing.
+This notebook uses Google Sheets for practice; it is not connected to live Supabase."""
+
+@tool
+def tool1(garment_type: str, quantity: int = 1) -> str:
+    """does stuff"""
+    return get_price.invoke({"garment_type": garment_type, "quantity": quantity})
+
+
+# Agent with clear, descriptive tools
+agent = create_agent(
+    model=llm,
+    tools=[get_price, find_customer, log_order],
+    system_prompt=SYSTEM
+)
+
+
+# ---------------------------------------------------------------------------
+# Execution & Testing
+# ---------------------------------------------------------------------------
+if __name__ == "__main__":
+    print("=" * 60)
+    print("TASK 1 & 2: Structured Output Extraction from Messy Messages")
+    print("=" * 60)
+    order_extractor = llm.with_structured_output(TailoringOrder)
+    messy_messages = [
+        "Ravi, customer C001, needs a shirt. Ordered today 26 Nov 2026, deliver 5 Dec 2026. Measurements chest 40, length 29. Price 400, paid 100 advance.",
+        "Need one black pant for customer C002, delivery next Friday. Pant length 40 waist 32. Price not decided yet.",
+        "C003 wants a kurta, blue cloth. Take order date as 2026-11-26 and delivery 2026-12-10. Rs 550, no advance.",
+        "Please make a blouse for customer C004; delivery 2026-12-02. Measurements: bust 36, waist 30. Colour maroon. No price mentioned.",
+        "Customer C005 ordered a shirt and pant as a set, group G55. Shirt is pair A, pant is pair B. Deliver 2026-12-15."
+    ]
+
+    for i, msg in enumerate(messy_messages, start=1):
+        print(f"\n--- Messy message {i} ---")
+        print(msg)
+        try:
+            parsed = order_extractor.invoke(msg)
+            print("Extracted Structured Order:")
+            print(parsed.model_dump())
+        except Exception as e:
+            print(f"Extraction error: {e}")
+
+    print("\n" + "=" * 60)
+    print("TASK 3: Logging Validated Order to Storage")
+    print("=" * 60)
+    log_result = log_order.invoke({
+        "id": "ORD001",
+        "customer_id": "C001",
+        "garment_type": "shirt",
+        "order_date": "2026-11-26",
+        "delivery_date": "2026-12-05",
+        "measurements": "Chest 40, Length 29, Shoulder 17",
+        "price": 400,
+        "advance": 100,
+        "notes": "Blue cotton shirt",
+        "cloth_color": "Blue"
+    })
+    print(log_result)
+
+    print("\n" + "=" * 60)
+    print("TASK 4: Testing Tool Description Impact")
+    print("=" * 60)
+    bad_agent = create_agent(model=llm, tools=[tool1, find_customer, log_order], system_prompt=SYSTEM)
+    bad_result = bad_agent.invoke({
+        "messages": [{"role": "user", "content": "Use tool1 to get the price of 2 shirts."}]
+    })
+    print("Poorly described tool output:")
+    for message in bad_result["messages"]:
+        message.pretty_print()
+
+    print("\n" + "=" * 60)
+    print("TASK 5: Inspecting Trace & Counting Calls")
+    print("=" * 60)
+    question = "What is the base price of 2 shirts?"
+    trace_result = agent.invoke({"messages": [{"role": "user", "content": question}]})
+    print("QUESTION:", question)
+    print("\n--- FULL TRACE ---")
+    for message in trace_result["messages"]:
+        message.pretty_print()
+
+    model_calls = sum(1 for m in trace_result["messages"] if isinstance(m, AIMessage))
+    tool_calls = sum(len(getattr(m, "tool_calls", []) or []) for m in trace_result["messages"])
+    tool_results = sum(1 for m in trace_result["messages"] if isinstance(m, ToolMessage))
+
+    print("\n--- TRACE COUNTS ---")
+    print("Model calls (AI messages):", model_calls)
+    print("Tool calls requested:", tool_calls)
+    print("Tool results returned:", tool_results)
