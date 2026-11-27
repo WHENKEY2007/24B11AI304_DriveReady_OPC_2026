@@ -7,7 +7,7 @@ Original file is located at
     https://colab.research.google.com/drive/1qd9roV5Ro_auzR6CfMoRtY1Z79CUDldS
 """
 
-!pip install -q langchain langchain-groq gspread pydantic
+# pip install -q langchain langchain-groq gspread pydantic
 
 import os
 from google.colab import userdata, auth
